@@ -228,6 +228,7 @@ Give a personalized action plan with exactly 5 points.
 Each point should be specific, actionable, and realistic for an Indian B.Tech student.
 Be direct and practical. No generic advice.
 Format each point as a single clear sentence starting with a verb.
+Mention all the data in points.
 """
 
         response = client.chat.completions.create(
