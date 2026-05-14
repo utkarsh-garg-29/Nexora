@@ -1,8 +1,7 @@
 import json
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
-
+from groq import Groq
 load_dotenv()
 
 with open("companies.json", "r") as f:
@@ -205,7 +204,7 @@ def get_skills_gap(skills, goal):
 
 def generate_action_plan(cgpa, skills, projects, internships, backlogs, goal, score, eligible_companies, stretch_companies, skills_gap):
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         eligible_names = [c["name"] for c in eligible_companies]
         stretch_names = [c["name"] for c in stretch_companies]
@@ -232,7 +231,7 @@ Format each point as a single clear sentence starting with a verb.
 """
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",  # Replace: "gpt-4o-mini"
             messages=[
                 {"role": "user", "content": prompt}
             ],
