@@ -227,8 +227,23 @@ Here is a student's profile:
 Give a personalized action plan with exactly 5 points.
 Each point should be specific, actionable, and realistic for an Indian B.Tech student.
 Be direct and practical. No generic advice.
-Format each point as a single clear sentence starting with a verb.
-Mention all the data in points, seperating every point with a countinuous counting bullet and inner point of that point with arrow bullet.
+
+Format STRICTLY like this:
+1. Main action point starting with a verb
+   → specific sub-step or detail
+   → another sub-step if needed
+
+2. Main action point starting with a verb
+   → specific sub-step or detail
+
+(and so on till 5)
+
+Rules:
+- Main points must be numbered 1 to 5
+- Sub-points must start with → on a new line
+- Each → must be on its own separate line
+- No paragraphs, no long sentences, no asterisks, no dashes
+- Use only the data provided, do not give generic advice
 """
 
         response = client.chat.completions.create(
