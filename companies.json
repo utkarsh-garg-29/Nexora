@@ -1,0 +1,146 @@
+[
+  {
+    "name": "TCS Ninja",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language"],
+    "package_lpa": 3.5,
+    "description": "TCS Ninja is the standard TCS recruitment drive for B.Tech students."
+  },
+  {
+    "name": "TCS Digital",
+    "tier": "mass",
+    "min_cgpa": 7.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "any programming language", "aptitude"],
+    "package_lpa": 7.0,
+    "description": "TCS Digital is the premium track with higher package and slightly tougher criteria."
+  },
+  {
+    "name": "Infosys",
+    "tier": "mass",
+    "min_cgpa": 6.5,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language"],
+    "package_lpa": 3.6,
+    "description": "Infosys recruits in large numbers from campuses across India."
+  },
+  {
+    "name": "Wipro",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language"],
+    "package_lpa": 3.5,
+    "description": "Wipro is one of India's largest IT service companies with campus drives."
+  },
+  {
+    "name": "Cognizant",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language", "communication skills"],
+    "package_lpa": 4.0,
+    "description": "Cognizant hires freshers for its GenC and GenC Elevate tracks."
+  },
+  {
+    "name": "Accenture",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language", "problem solving"],
+    "package_lpa": 4.5,
+    "description": "Accenture hires for ASE and PackageD roles from engineering campuses."
+  },
+  {
+    "name": "IBM",
+    "tier": "mass",
+    "min_cgpa": 6.5,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language", "cloud basics"],
+    "package_lpa": 4.5,
+    "description": "IBM hires for software development and consulting roles."
+  },
+  {
+    "name": "HCL Technologies",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 1,
+    "required_skills": ["any programming language"],
+    "package_lpa": 3.5,
+    "description": "HCL has one of the more lenient backlog policies among mass recruiters."
+  },
+  {
+    "name": "Tech Mahindra",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 1,
+    "required_skills": ["any programming language"],
+    "package_lpa": 3.25,
+    "description": "Tech Mahindra recruits freshers for software engineering and support roles."
+  },
+  {
+    "name": "Capgemini",
+    "tier": "mass",
+    "min_cgpa": 6.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language", "aptitude"],
+    "package_lpa": 4.0,
+    "description": "Capgemini hires for its Analyst and Senior Analyst tracks via campus drives."
+  },
+  {
+    "name": "Zoho",
+    "tier": "mid",
+    "min_cgpa": 6.5,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "algorithms", "any programming language", "problem solving"],
+    "package_lpa": 6.0,
+    "description": "Zoho is a product company known for its rigorous technical hiring process."
+  },
+  {
+    "name": "Deloitte",
+    "tier": "mid",
+    "min_cgpa": 7.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["any programming language", "aptitude", "communication skills"],
+    "package_lpa": 7.5,
+    "description": "Deloitte UST hires for technology consulting and software engineering roles."
+  },
+  {
+    "name": "Flipkart",
+    "tier": "mid",
+    "min_cgpa": 7.5,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "algorithms", "python", "system design basics"],
+    "package_lpa": 18.0,
+    "description": "Flipkart hires SDE-1s via competitive coding rounds and design interviews."
+  },
+  {
+    "name": "Amazon",
+    "tier": "top",
+    "min_cgpa": 7.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "algorithms", "problem solving", "system design basics", "python or java or c++"],
+    "package_lpa": 32.0,
+    "description": "Amazon SDE-1 is one of the most sought-after fresher roles in India."
+  },
+  {
+    "name": "Microsoft",
+    "tier": "top",
+    "min_cgpa": 8.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "algorithms", "problem solving", "system design basics", "competitive programming"],
+    "package_lpa": 45.0,
+    "description": "Microsoft hires from top colleges with a strong focus on DSA and problem solving."
+  },
+  {
+    "name": "Google",
+    "tier": "top",
+    "min_cgpa": 8.0,
+    "backlogs_allowed": 0,
+    "required_skills": ["data structures", "algorithms", "competitive programming", "system design", "problem solving"],
+    "package_lpa": 55.0,
+    "description": "Google is the most competitive fresher hire — requires exceptional DSA and CP skills."
+  }
+]
