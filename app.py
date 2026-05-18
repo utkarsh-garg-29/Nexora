@@ -127,7 +127,7 @@ with st.form("profile_form"):
             st.warning("Please select at least one skill.")
         else:
             with st.spinner("Analyzing your profile..."):
-                score = calculate_score(cgpa, selected_skills, projects, internships, backlogs)
+                score, score_breakdown = calculate_score(cgpa, selected_skills, projects, internships, backlogs)
                 eligible = match_companies(cgpa, selected_skills, backlogs, goal)
                 eligible_names = [c["name"] for c in eligible]
                 stretch = get_stretch_companies(cgpa, selected_skills, backlogs, goal, eligible_names)
@@ -162,6 +162,36 @@ with st.form("profile_form"):
                 <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.5rem;">{msg}</div>
             </div>
             """, unsafe_allow_html=True)
+
+            # --- SCORE BREAKDOWN ---
+            st.markdown("#### Score Breakdown")
+            breakdown_labels = {
+                "cgpa":        ("🎓", "CGPA", 30),
+                "skills":      ("🛠️", "Skills", 25),
+                "projects":    ("💻", "Projects", 20),
+                "internships": ("🏢", "Internships", 15),
+                "backlogs":    ("⚠️", "Backlogs", 0),
+            }
+            for key, (icon, label, max_val) in breakdown_labels.items():
+                comp = score_breakdown.get(key, {})
+                comp_score = comp.get("score", 0)
+                reason = comp.get("reason", "")
+                is_penalty = key == "backlogs"
+                bar_color = "#ef4444" if is_penalty else "#a78bfa"
+                bar_pct = abs(comp_score) / (abs(max_val) if max_val else 15) * 100 if max_val != 0 else (abs(comp_score) / 15 * 100)
+                score_display = f"{comp_score:+d}" if is_penalty else f"{comp_score}/{max_val}"
+                st.markdown(f"""
+                <div style="margin-bottom: 0.9rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                        <span style="font-size:0.88rem; color:#cbd5e1;">{icon} {label}</span>
+                        <span style="font-size:0.88rem; font-weight:600; color:{bar_color};">{score_display}</span>
+                    </div>
+                    <div style="background:#1e1e3a; border-radius:6px; height:6px; width:100%;">
+                        <div style="background:{bar_color}; width:{min(bar_pct,100):.0f}%; height:6px; border-radius:6px;"></div>
+                    </div>
+                    <div style="font-size:0.78rem; color:#64748b; margin-top:3px;">{reason}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
             st.divider()
 
