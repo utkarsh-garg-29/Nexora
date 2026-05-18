@@ -8,29 +8,67 @@ with open("companies.json", "r") as f:
     COMPANIES = json.load(f)
 
 
-def calculate_score(cgpa, skills, projects, internships, backlogs):
+DOMAIN_SKILL_MAP = {
+    "Web Development (Frontend/Backend/Full Stack)": [
+        "JavaScript", "React", "Node.js", "HTML/CSS", "Django", "Flask", "SQL", "Git"
+    ],
+    "Data Science / ML / AI": [
+        "Python", "ML", "Deep Learning", "NLP", "Data Analysis", "SQL", "Statistics"
+    ],
+    "DevOps / Cloud": [
+        "Cloud", "Git", "Linux", "Python", "Docker", "CI/CD", "System Design"
+    ],
+    "Android / Mobile Dev": [
+        "Java", "Kotlin", "Python", "Git", "SQL", "React"
+    ],
+    "Competitive Programming / SDE roles": [
+        "DSA", "Algorithms", "CP", "C++", "Java", "Python", "Problem Solving", "System Design"
+    ],
+    "Cybersecurity": [
+        "Python", "CN", "OS", "Linux", "C++", "DSA"
+    ]
+}
+
+
+def calculate_score(cgpa, skills, projects, internships, backlogs, primary_domain="", secondary_domain=""):
     """
-    AI-powered placement readiness scorer using Groq.
+    AI-powered, domain-aware placement readiness scorer using Groq.
     Returns a tuple: (total_score: int, breakdown: dict)
     breakdown = {
-        "cgpa":        {"score": int, "max": 30, "reason": str},
-        "skills":      {"score": int, "max": 25, "reason": str},
-        "projects":    {"score": int, "max": 20, "reason": str},
-        "internships": {"score": int, "max": 15, "reason": str},
-        "backlogs":    {"score": int, "max": 0,  "reason": str},  # penalty, score is negative or 0
+        "cgpa":           {"score": int, "max": 25, "reason": str},
+        "skills":         {"score": int, "max": 30, "reason": str},
+        "projects":       {"score": int, "max": 20, "reason": str},
+        "internships":    {"score": int, "max": 15, "reason": str},
+        "domain_fit":     {"score": int, "max": 10, "reason": str},
+        "backlogs":       {"score": int, "max": 0,  "reason": str},
     }
     Falls back to rule-based scoring if Groq is unavailable.
     """
+    primary_core = DOMAIN_SKILL_MAP.get(primary_domain, [])
+    secondary_core = DOMAIN_SKILL_MAP.get(secondary_domain, [])
+
+    domain_context = ""
+    if primary_domain:
+        domain_context = f"""
+Target Domains:
+- Primary: {primary_domain}
+  Core skills for this domain: {', '.join(primary_core) if primary_core else 'General'}
+- Secondary: {secondary_domain if secondary_domain else 'None'}
+  Core skills for secondary: {', '.join(secondary_core) if secondary_core else 'N/A'}
+
+IMPORTANT: Evaluate skills, projects, and internships RELATIVE to the target domains.
+A student with Python + ML + Data Analysis targeting "Data Science / ML / AI" should score much higher on skills
+than the same person targeting "Cybersecurity". Weight domain-relevant skills much more than irrelevant ones.
+"""
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         prompt = f"""
 You are an expert placement readiness evaluator for Indian B.Tech CSE students.
 
-Score this student's placement readiness profile out of 100. 
-Evaluate holistically — consider not just quantity but quality and combinations.
-For example, 3 relevant skills (DSA + Python + SQL) should score higher than 3 unrelated ones.
-A student with internships but no projects should be scored differently than vice versa.
+Score this student's domain-specific placement readiness out of 100.
+Be generous but accurate — a 9 CGPA student with 4 projects and 2 internships is genuinely strong and should score 88-95.
+Do NOT undervalue strong profiles. A fresher with 9 CGPA, 4+ projects, and 2 internships targeting any domain deserves 85+.
 
 Student Profile:
 - CGPA: {cgpa} / 10
@@ -39,28 +77,33 @@ Student Profile:
 - Internships Done: {internships}
 - Active Backlogs: {backlogs}
 
+{domain_context}
+
 Scoring weights (use these as MAXIMUMS, not fixed brackets):
-- CGPA: max 30 points
-- Skills (quality + quantity + relevance): max 25 points
+- CGPA: max 25 points
+- Skills (domain-relevance + quality + quantity): max 30 points  ← most important, weighted by domain fit
 - Projects: max 20 points
 - Internships: max 15 points
+- Domain Fit (how well overall profile aligns with target domain): max 10 points
 - Backlogs: penalty up to -15 points (0 backlogs = 0 penalty)
 
 Respond ONLY with valid JSON. No explanation outside the JSON. Format exactly:
 {{
   "cgpa":        {{"score": <int>, "reason": "<one short sentence>"}},
-  "skills":      {{"score": <int>, "reason": "<one short sentence>"}},
+  "skills":      {{"score": <int>, "reason": "<one short sentence mentioning domain relevance>"}},
   "projects":    {{"score": <int>, "reason": "<one short sentence>"}},
   "internships": {{"score": <int>, "reason": "<one short sentence>"}},
+  "domain_fit":  {{"score": <int>, "reason": "<one short sentence about overall domain alignment>"}},
   "backlogs":    {{"score": <int>, "reason": "<one short sentence>"}}
 }}
 
 Rules:
 - All scores must be integers
-- cgpa score: 0 to 30
-- skills score: 0 to 25
+- cgpa score: 0 to 25
+- skills score: 0 to 30
 - projects score: 0 to 20
 - internships score: 0 to 15
+- domain_fit score: 0 to 10
 - backlogs score: -15 to 0 (negative penalty or zero)
 - reason must be one sentence, plain text, no asterisks
 """
@@ -84,10 +127,11 @@ Rules:
         data = json.loads(raw)
 
         breakdown = {
-            "cgpa":        {"score": int(data["cgpa"]["score"]),        "max": 30, "reason": data["cgpa"]["reason"]},
-            "skills":      {"score": int(data["skills"]["score"]),      "max": 25, "reason": data["skills"]["reason"]},
+            "cgpa":        {"score": int(data["cgpa"]["score"]),        "max": 25, "reason": data["cgpa"]["reason"]},
+            "skills":      {"score": int(data["skills"]["score"]),      "max": 30, "reason": data["skills"]["reason"]},
             "projects":    {"score": int(data["projects"]["score"]),    "max": 20, "reason": data["projects"]["reason"]},
             "internships": {"score": int(data["internships"]["score"]), "max": 15, "reason": data["internships"]["reason"]},
+            "domain_fit":  {"score": int(data["domain_fit"]["score"]),  "max": 10, "reason": data["domain_fit"]["reason"]},
             "backlogs":    {"score": int(data["backlogs"]["score"]),    "max": 0,  "reason": data["backlogs"]["reason"]},
         }
 
@@ -100,27 +144,25 @@ Rules:
         breakdown = {}
 
         if cgpa >= 9.0:
-            breakdown["cgpa"] = {"score": 30, "max": 30, "reason": "Exceptional CGPA — top tier for all recruiters."}
+            breakdown["cgpa"] = {"score": 25, "max": 25, "reason": "Exceptional CGPA — top tier for all recruiters."}
         elif cgpa >= 8.0:
-            breakdown["cgpa"] = {"score": 25, "max": 30, "reason": "Strong CGPA — eligible for most companies."}
+            breakdown["cgpa"] = {"score": 21, "max": 25, "reason": "Strong CGPA — eligible for most companies."}
         elif cgpa >= 7.0:
-            breakdown["cgpa"] = {"score": 20, "max": 30, "reason": "Decent CGPA — meets the 7.0 cutoff for many roles."}
+            breakdown["cgpa"] = {"score": 17, "max": 25, "reason": "Decent CGPA — meets the 7.0 cutoff for many roles."}
         elif cgpa >= 6.0:
-            breakdown["cgpa"] = {"score": 13, "max": 30, "reason": "Borderline CGPA — limits company options significantly."}
+            breakdown["cgpa"] = {"score": 11, "max": 25, "reason": "Borderline CGPA — limits company options significantly."}
         else:
-            breakdown["cgpa"] = {"score": 5, "max": 30, "reason": "Low CGPA — most companies will filter you out early."}
+            breakdown["cgpa"] = {"score": 4, "max": 25, "reason": "Low CGPA — most companies will filter you out early."}
 
-        skill_count = len(skills)
-        if skill_count >= 7:
-            breakdown["skills"] = {"score": 25, "max": 25, "reason": "Strong skill set — well-rounded profile."}
-        elif skill_count >= 5:
-            breakdown["skills"] = {"score": 20, "max": 25, "reason": "Good variety of skills for most roles."}
-        elif skill_count >= 3:
-            breakdown["skills"] = {"score": 13, "max": 25, "reason": "Moderate skills — a few more would help."}
-        elif skill_count >= 1:
-            breakdown["skills"] = {"score": 6, "max": 25, "reason": "Very few skills — focus on building core competencies."}
-        else:
-            breakdown["skills"] = {"score": 0, "max": 25, "reason": "No skills selected — critical gap."}
+        # domain-aware skill scoring
+        primary_core_lower = [s.lower() for s in primary_core]
+        skills_lower = [s.lower() for s in skills]
+        domain_matches = sum(1 for s in skills_lower if any(s in pc or pc in s for pc in primary_core_lower))
+        skill_score = min(30, domain_matches * 5 + max(0, len(skills) - domain_matches) * 2)
+        breakdown["skills"] = {
+            "score": skill_score, "max": 30,
+            "reason": f"{domain_matches} of your skills are relevant to {primary_domain or 'your target domain'}."
+        }
 
         if projects >= 4:
             breakdown["projects"] = {"score": 20, "max": 20, "reason": "Excellent project count — shows strong hands-on experience."}
@@ -139,6 +181,12 @@ Rules:
             breakdown["internships"] = {"score": 10, "max": 15, "reason": "One internship — good start, real-world experience adds credibility."}
         else:
             breakdown["internships"] = {"score": 0, "max": 15, "reason": "No internships — try to get at least one before placements."}
+
+        domain_fit_score = min(10, domain_matches * 2) if primary_domain else 5
+        breakdown["domain_fit"] = {
+            "score": domain_fit_score, "max": 10,
+            "reason": f"Profile alignment with {primary_domain or 'target domain'} is {'strong' if domain_fit_score >= 7 else 'moderate' if domain_fit_score >= 4 else 'weak'}."
+        }
 
         if backlogs == 0:
             breakdown["backlogs"] = {"score": 0, "max": 0, "reason": "No backlogs — clean academic record."}

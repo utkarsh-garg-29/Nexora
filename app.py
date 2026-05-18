@@ -119,6 +119,34 @@ with st.form("profile_form"):
         help="Any IT job = 3–6 LPA  |  Mid-tier = 8–15 LPA  |  Top product = 25+ LPA"
     )
 
+    st.markdown('<p class="section-title">Target Domain</p>', unsafe_allow_html=True)
+    st.caption("Your score will be evaluated relative to your domain — pick honestly")
+
+    DOMAINS = [
+        "Web Development (Frontend/Backend/Full Stack)",
+        "Data Science / ML / AI",
+        "DevOps / Cloud",
+        "Android / Mobile Dev",
+        "Competitive Programming / SDE roles",
+        "Cybersecurity"
+    ]
+
+    col1, col2 = st.columns(2)
+    with col1:
+        primary_domain = st.selectbox(
+            "Primary Domain",
+            options=DOMAINS,
+            help="The domain you're most focused on"
+        )
+    with col2:
+        secondary_options = ["None"] + [d for d in DOMAINS if d != primary_domain]
+        secondary_domain = st.selectbox(
+            "Secondary Domain",
+            options=secondary_options,
+            help="Optional — a domain you're also open to"
+        )
+    secondary_domain = "" if secondary_domain == "None" else secondary_domain
+
     submitted = st.form_submit_button("Analyze My Profile 🚀", use_container_width=True)
 
     # --- RESULTS (inside form so data is available) ---
@@ -127,7 +155,7 @@ with st.form("profile_form"):
             st.warning("Please select at least one skill.")
         else:
             with st.spinner("Analyzing your profile..."):
-                score, score_breakdown = calculate_score(cgpa, selected_skills, projects, internships, backlogs)
+                score, score_breakdown = calculate_score(cgpa, selected_skills, projects, internships, backlogs, primary_domain, secondary_domain)
                 eligible = match_companies(cgpa, selected_skills, backlogs, goal)
                 eligible_names = [c["name"] for c in eligible]
                 stretch = get_stretch_companies(cgpa, selected_skills, backlogs, goal, eligible_names)
@@ -144,8 +172,12 @@ with st.form("profile_form"):
             st.divider()
 
             # --- SCORE ---
-            st.markdown("## Your Placement Readiness Score")
-            if score >= 75:
+            domain_label = f"{primary_domain}" + (f" + {secondary_domain}" if secondary_domain else "")
+            st.markdown(f"## Your Placement Readiness Score")
+            st.caption(f"Scored relative to: **{domain_label}**")
+            if score >= 85:
+                color, label, msg = "#22c55e", "Excellent 🔥", "You are a strong candidate — start applying to top companies."
+            elif score >= 70:
                 color, label, msg = "#22c55e", "Strong 💪", "Great profile! You are well placed for your goal."
             elif score >= 50:
                 color, label, msg = "#f59e0b", "Decent 📈", "A few improvements can unlock significantly better companies."
@@ -166,10 +198,11 @@ with st.form("profile_form"):
             # --- SCORE BREAKDOWN ---
             st.markdown("#### Score Breakdown")
             breakdown_labels = {
-                "cgpa":        ("🎓", "CGPA", 30),
-                "skills":      ("🛠️", "Skills", 25),
+                "cgpa":        ("🎓", "CGPA", 25),
+                "skills":      ("🛠️", "Skills (Domain-Weighted)", 30),
                 "projects":    ("💻", "Projects", 20),
                 "internships": ("🏢", "Internships", 15),
+                "domain_fit":  ("🎯", "Domain Fit", 10),
                 "backlogs":    ("⚠️", "Backlogs", 0),
             }
             for key, (icon, label, max_val) in breakdown_labels.items():
