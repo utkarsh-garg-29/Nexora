@@ -9,56 +9,149 @@ with open("companies.json", "r") as f:
 
 
 def calculate_score(cgpa, skills, projects, internships, backlogs):
-    score = 0
+    """
+    AI-powered placement readiness scorer using Groq.
+    Returns a tuple: (total_score: int, breakdown: dict)
+    breakdown = {
+        "cgpa":        {"score": int, "max": 30, "reason": str},
+        "skills":      {"score": int, "max": 25, "reason": str},
+        "projects":    {"score": int, "max": 20, "reason": str},
+        "internships": {"score": int, "max": 15, "reason": str},
+        "backlogs":    {"score": int, "max": 0,  "reason": str},  # penalty, score is negative or 0
+    }
+    Falls back to rule-based scoring if Groq is unavailable.
+    """
+    try:
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-    # CGPA — max 30 points
-    if cgpa >= 9.0:
-        score += 30
-    elif cgpa >= 8.0:
-        score += 25
-    elif cgpa >= 7.0:
-        score += 20
-    elif cgpa >= 6.0:
-        score += 13
-    else:
-        score += 5
+        prompt = f"""
+You are an expert placement readiness evaluator for Indian B.Tech CSE students.
 
-    # Skills — max 25 points
-    skill_count = len(skills)
-    if skill_count >= 7:
-        score += 25
-    elif skill_count >= 5:
-        score += 20
-    elif skill_count >= 3:
-        score += 13
-    elif skill_count >= 1:
-        score += 6
+Score this student's placement readiness profile out of 100. 
+Evaluate holistically — consider not just quantity but quality and combinations.
+For example, 3 relevant skills (DSA + Python + SQL) should score higher than 3 unrelated ones.
+A student with internships but no projects should be scored differently than vice versa.
 
-    # Projects — max 20 points
-    if projects >= 4:
-        score += 20
-    elif projects == 3:
-        score += 15
-    elif projects == 2:
-        score += 10
-    elif projects == 1:
-        score += 5
+Student Profile:
+- CGPA: {cgpa} / 10
+- Skills: {', '.join(skills) if skills else 'None'}
+- Projects Completed: {projects}
+- Internships Done: {internships}
+- Active Backlogs: {backlogs}
 
-    # Internships — max 15 points
-    if internships >= 2:
-        score += 15
-    elif internships == 1:
-        score += 10
+Scoring weights (use these as MAXIMUMS, not fixed brackets):
+- CGPA: max 30 points
+- Skills (quality + quantity + relevance): max 25 points
+- Projects: max 20 points
+- Internships: max 15 points
+- Backlogs: penalty up to -15 points (0 backlogs = 0 penalty)
 
-    # Backlogs — penalty up to -15 points
-    if backlogs == 1:
-        score -= 5
-    elif backlogs == 2:
-        score -= 10
-    elif backlogs >= 3:
-        score -= 15
+Respond ONLY with valid JSON. No explanation outside the JSON. Format exactly:
+{{
+  "cgpa":        {{"score": <int>, "reason": "<one short sentence>"}},
+  "skills":      {{"score": <int>, "reason": "<one short sentence>"}},
+  "projects":    {{"score": <int>, "reason": "<one short sentence>"}},
+  "internships": {{"score": <int>, "reason": "<one short sentence>"}},
+  "backlogs":    {{"score": <int>, "reason": "<one short sentence>"}}
+}}
 
-    return max(0, min(score, 100))
+Rules:
+- All scores must be integers
+- cgpa score: 0 to 30
+- skills score: 0 to 25
+- projects score: 0 to 20
+- internships score: 0 to 15
+- backlogs score: -15 to 0 (negative penalty or zero)
+- reason must be one sentence, plain text, no asterisks
+"""
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.3
+        )
+
+        raw = response.choices[0].message.content.strip()
+
+        # strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        data = json.loads(raw)
+
+        breakdown = {
+            "cgpa":        {"score": int(data["cgpa"]["score"]),        "max": 30, "reason": data["cgpa"]["reason"]},
+            "skills":      {"score": int(data["skills"]["score"]),      "max": 25, "reason": data["skills"]["reason"]},
+            "projects":    {"score": int(data["projects"]["score"]),    "max": 20, "reason": data["projects"]["reason"]},
+            "internships": {"score": int(data["internships"]["score"]), "max": 15, "reason": data["internships"]["reason"]},
+            "backlogs":    {"score": int(data["backlogs"]["score"]),    "max": 0,  "reason": data["backlogs"]["reason"]},
+        }
+
+        total = sum(v["score"] for v in breakdown.values())
+        total = max(0, min(total, 100))
+        return total, breakdown
+
+    except Exception:
+        # --- Fallback: rule-based scoring ---
+        breakdown = {}
+
+        if cgpa >= 9.0:
+            breakdown["cgpa"] = {"score": 30, "max": 30, "reason": "Exceptional CGPA — top tier for all recruiters."}
+        elif cgpa >= 8.0:
+            breakdown["cgpa"] = {"score": 25, "max": 30, "reason": "Strong CGPA — eligible for most companies."}
+        elif cgpa >= 7.0:
+            breakdown["cgpa"] = {"score": 20, "max": 30, "reason": "Decent CGPA — meets the 7.0 cutoff for many roles."}
+        elif cgpa >= 6.0:
+            breakdown["cgpa"] = {"score": 13, "max": 30, "reason": "Borderline CGPA — limits company options significantly."}
+        else:
+            breakdown["cgpa"] = {"score": 5, "max": 30, "reason": "Low CGPA — most companies will filter you out early."}
+
+        skill_count = len(skills)
+        if skill_count >= 7:
+            breakdown["skills"] = {"score": 25, "max": 25, "reason": "Strong skill set — well-rounded profile."}
+        elif skill_count >= 5:
+            breakdown["skills"] = {"score": 20, "max": 25, "reason": "Good variety of skills for most roles."}
+        elif skill_count >= 3:
+            breakdown["skills"] = {"score": 13, "max": 25, "reason": "Moderate skills — a few more would help."}
+        elif skill_count >= 1:
+            breakdown["skills"] = {"score": 6, "max": 25, "reason": "Very few skills — focus on building core competencies."}
+        else:
+            breakdown["skills"] = {"score": 0, "max": 25, "reason": "No skills selected — critical gap."}
+
+        if projects >= 4:
+            breakdown["projects"] = {"score": 20, "max": 20, "reason": "Excellent project count — shows strong hands-on experience."}
+        elif projects == 3:
+            breakdown["projects"] = {"score": 15, "max": 20, "reason": "Good project count — solid practical experience."}
+        elif projects == 2:
+            breakdown["projects"] = {"score": 10, "max": 20, "reason": "Decent projects — build 1-2 more before placement."}
+        elif projects == 1:
+            breakdown["projects"] = {"score": 5, "max": 20, "reason": "Only 1 project — needs more to be competitive."}
+        else:
+            breakdown["projects"] = {"score": 0, "max": 20, "reason": "No projects — this is a major red flag for recruiters."}
+
+        if internships >= 2:
+            breakdown["internships"] = {"score": 15, "max": 15, "reason": "Multiple internships — strong industry exposure."}
+        elif internships == 1:
+            breakdown["internships"] = {"score": 10, "max": 15, "reason": "One internship — good start, real-world experience adds credibility."}
+        else:
+            breakdown["internships"] = {"score": 0, "max": 15, "reason": "No internships — try to get at least one before placements."}
+
+        if backlogs == 0:
+            breakdown["backlogs"] = {"score": 0, "max": 0, "reason": "No backlogs — clean academic record."}
+        elif backlogs == 1:
+            breakdown["backlogs"] = {"score": -5, "max": 0, "reason": "1 backlog — minor penalty, clear it ASAP."}
+        elif backlogs == 2:
+            breakdown["backlogs"] = {"score": -10, "max": 0, "reason": "2 backlogs — significant penalty, most companies will reject."}
+        else:
+            breakdown["backlogs"] = {"score": -15, "max": 0, "reason": f"{backlogs} backlogs — severe penalty, clearing these is the #1 priority."}
+
+        total = sum(v["score"] for v in breakdown.values())
+        total = max(0, min(total, 100))
+        return total, breakdown
 
 def match_companies(cgpa, skills, backlogs, goal):
     eligible = []
