@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from groq import Groq
 load_dotenv()
 
+# Model name comes from .env (GROQ_MODEL); falls back to this default
+MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
 with open("companies.json", "r") as f:
     COMPANIES = json.load(f)
 
@@ -109,10 +112,11 @@ Rules:
 """
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.3
+            max_tokens=2000,
+            temperature=0.3,
+            reasoning_effort="low"
         )
 
         raw = response.choices[0].message.content.strip()
@@ -139,7 +143,8 @@ Rules:
         total = max(0, min(total, 100))
         return total, breakdown
 
-    except Exception:
+    except Exception as e:
+        print("GROQ ERROR (scoring):", e)
         # --- Fallback: rule-based scoring ---
         breakdown = {}
 
@@ -266,7 +271,7 @@ def get_stretch_companies(cgpa, skills, backlogs, goal, eligible_names):
             missing.append(f"Need {gap} more CGPA (min: {company['min_cgpa']})")
 
         # check backlogs
-       # check backlogs
+        # check backlogs
         if backlogs > company["backlogs_allowed"]:
             if company["backlogs_allowed"] == 0:
                 missing.append("Clear all backlogs — this company has a strict zero backlog policy")
@@ -283,10 +288,10 @@ def get_stretch_companies(cgpa, skills, backlogs, goal, eligible_names):
                 direct_match = any(req in skill or skill in req for skill in skills_lower)
                 abbrev_match = req_words in student_concat
                 alias_match = (
-                    ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
-                    ("data structures" in skills_lower and req == "algorithms") or
-                    ("ml" in skills_lower and req == "machine learning") or
-                    ("ai" in skills_lower and req == "machine learning")
+                        ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
+                        ("data structures" in skills_lower and req == "algorithms") or
+                        ("ml" in skills_lower and req == "machine learning") or
+                        ("ai" in skills_lower and req == "machine learning")
                 )
                 if not direct_match and not abbrev_match and not alias_match:
                     missing_skills.append(req)
@@ -333,9 +338,9 @@ def get_skills_gap(skills, goal):
         direct_match = any(req in skill or skill in req for skill in skills_lower)
         abbrev_match = req_words in student_concat
         alias_match = (
-            ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
-            ("ml" in skills_lower and req == "machine learning") or
-            ("ai" in skills_lower and req == "machine learning")
+                ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
+                ("ml" in skills_lower and req == "machine learning") or
+                ("ai" in skills_lower and req == "machine learning")
         )
         if not direct_match and not abbrev_match and not alias_match:
             missing.append(req)
@@ -388,17 +393,19 @@ Rules:
 """
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # Replace: "gpt-4o-mini"
+            model=MODEL,
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=400
+            max_tokens=2000,
+            reasoning_effort="low"
         )
 
         return response.choices[0].message.content
 
     except Exception as e:
-        # fallback if OpenAI fails
+        print("GROQ ERROR (action plan):", e)
+        # fallback if the AI call fails
         plan = []
         if backlogs > 0:
             plan.append(f"Clear your {backlogs} active backlog(s) immediately — most companies have a zero backlog policy.")
@@ -451,9 +458,9 @@ def get_dream_company_gap(cgpa, skills, backlogs, company_name):
             direct_match = any(req in skill or skill in req for skill in skills_lower)
             abbrev_match = req_words in student_concat
             alias_match = (
-                ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
-                ("ml" in skills_lower and req == "machine learning") or
-                ("cp" in skills_lower and req == "competitive programming")
+                    ("dsa" in skills_lower and req in ["data structures", "algorithms"]) or
+                    ("ml" in skills_lower and req == "machine learning") or
+                    ("cp" in skills_lower and req == "competitive programming")
             )
             if direct_match or abbrev_match or alias_match:
                 gap["you_have"].append(f"You know {req}")
